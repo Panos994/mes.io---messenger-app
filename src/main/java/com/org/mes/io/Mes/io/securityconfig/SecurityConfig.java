@@ -14,7 +14,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-//@Configuration
+@Configuration
 @EnableWebSecurity
 public class SecurityConfig {
     private final String FRONTEND_ORIGIN = "https://mes-io-messenger-app-1.onrender.com";
@@ -29,8 +29,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                                 .requestMatchers("/","/api/auth/**", "/ws/**").permitAll()
-                                .anyRequest().permitAll()
-                        //.anyRequest().authenticated()
+                                //.anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 );
         return http.build();
     }

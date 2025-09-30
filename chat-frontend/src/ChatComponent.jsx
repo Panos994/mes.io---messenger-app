@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+//const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = 'http://localhost:8080';
 const ChatComponent = () => {
     const [sender, setSender] = useState("");
     const [receiver, setReceiver] = useState("");
