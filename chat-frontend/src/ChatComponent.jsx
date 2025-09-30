@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
-
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const ChatComponent = () => {
     const [sender, setSender] = useState("");
     const [receiver, setReceiver] = useState("");
@@ -21,7 +21,7 @@ const ChatComponent = () => {
     }, [messages]);
 
     const connect = () => {
-        const socket = new SockJS("http://localhost:8080/ws");
+        const socket = new SockJS(`${API_BASE_URL}/ws`); //"http://localhost:8080/ws"
         const stompClient = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {
