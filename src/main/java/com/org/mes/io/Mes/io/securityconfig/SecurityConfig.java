@@ -17,7 +17,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final String FRONTEND_ORIGIN = "https://mes-io-messenger-app-1.onrender.com/";
+    private final String FRONTEND_ORIGIN = "https://mes-io-messenger-app-1.onrender.com";
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -38,7 +38,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // **ΚΡΙΣΙΜΟ:** Πρέπει να επιτρέψετε το Origin του Frontend σας
+        // **ΚΡΙΣΙΜΟ:** το Origin του Frontend
         configuration.setAllowedOrigins(List.of(FRONTEND_ORIGIN, "http://localhost:8080","http://localhost:3000")); // Προσθέστε το localhost για τοπική ανάπτυξη
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
