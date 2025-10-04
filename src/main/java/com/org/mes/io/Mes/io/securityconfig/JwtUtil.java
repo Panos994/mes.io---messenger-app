@@ -12,7 +12,7 @@ public class JwtUtil {
 
     private final String SECRET_KEY = "abc4%67*s";
     private final long EXPIRATION_TIME = 86400000;
-    private final Key key = Keys.hmacShaKeyFor("abc4%67*s1234567890abc4%67*s1234567890".getBytes());
+    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
 
 
     public String generateToken(String username) {
