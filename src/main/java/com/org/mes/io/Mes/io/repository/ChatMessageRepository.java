@@ -6,7 +6,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 public interface ChatMessageRepository extends JpaRepository<ChatMessage,Long> {
-    List<ChatMessage> findBySenderAndReceiver(User sender, User receiver);
-    List<ChatMessage> findByReceiverAndSender(User receiver, User sender);
+
+    // Τροποποίηση: Πρόσθεσε 'OrderByTimestampAsc'
+    List<ChatMessage> findBySenderAndReceiverOrderByTimestampAsc(User sender, User receiver);
+
+    // Τροποποίηση: Πρόσθεσε 'OrderByTimestampAsc'
+    List<ChatMessage> findByReceiverAndSenderOrderByTimestampAsc(User receiver, User sender);
 }

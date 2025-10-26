@@ -22,37 +22,149 @@ const SignUpPage = () => {
     };
 
     return (
-        <div style={{ margin: "100px auto", width: "300px", textAlign: "center" }}>
-            <h2>Sign Up</h2>
-            <form onSubmit={handleSignUp}>
-                <input
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                /><br/>
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                /><br/>
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                /><br/>
-                <button type="submit">Sign Up</button>
-            </form>
-            <p onClick={() => navigate("/")} style={{ cursor: "pointer", color: "blue" }}>
-                Already have an account? Login
-            </p>
+        <div style={styles.container}>
+            <div style={styles.card}>
+                <img src="/chatlogo.png" alt="Gaming Chat Logo" style={styles.logo} /> {/* <-- ΝΕΟ LOGO */}
+                <h2 style={styles.title}>Create an account</h2> {/* <-- Τροποποιημένο κείμενο */}
+                <p style={styles.subtitle}>Join our chatting community!</p>
+
+                <form onSubmit={handleSignUp}>
+                    <div style={styles.formGroup}>
+                        <label htmlFor="username" style={styles.label}>USERNAME</label>
+                        <input
+                            id="username"
+                            type="text"
+                            placeholder=""
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                            style={styles.input}
+                        /><br/>
+                    </div>
+                    <div style={styles.formGroup}>
+                        <label htmlFor="email" style={styles.label}>EMAIL</label>
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder=""
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={styles.input}
+                        /><br/>
+                    </div>
+                    <div style={styles.formGroup}>
+                        <label htmlFor="password" style={styles.label}>PASSWORD</label>
+                        <input
+                            id="password"
+                            type="password"
+                            placeholder=""
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={styles.input}
+                        /><br/>
+                    </div>
+
+                    <button type="submit" style={styles.button}>
+                        Sign Up
+                    </button>
+                </form>
+
+                <p style={styles.signupText}>
+                    Already have an account?{" "}
+                    <span onClick={() => navigate("/")} style={styles.signupLink}>
+                        Login
+                    </span>
+                </p>
+            </div>
         </div>
     );
+};
+
+// --- STYLES (ίδια με του LoginPage για συνέπεια) ---
+const styles = {
+    container: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        backgroundColor: "#36393f",
+        fontFamily: "Whitney, Helvetica Neue, Helvetica, Arial, sans-serif",
+    },
+    card: {
+        backgroundColor: "#303136",
+        padding: "40px",
+        borderRadius: "8px",
+        width: "400px",
+        textAlign: "center",
+        boxShadow: "0 2px 10px 0 rgba(0, 0, 0, 0.2)",
+    },
+    logo: {
+        width: "80px",
+        height: "80px",
+        marginBottom: "20px",
+        borderRadius: "50%",
+        objectFit: "cover",
+        border: "3px solid #7289da",
+    },
+    title: {
+        color: "#fff",
+        fontSize: "24px",
+        fontWeight: 600,
+        marginBottom: "8px",
+    },
+    subtitle: {
+        color: "#b9bbbe",
+        fontSize: "16px",
+        marginBottom: "20px",
+    },
+    formGroup: {
+        textAlign: "left",
+        marginBottom: "15px",
+    },
+    label: {
+        display: "block",
+        color: "#b9bbbe",
+        fontSize: "12px",
+        fontWeight: 600,
+        marginBottom: "8px",
+        textTransform: "uppercase",
+    },
+    input: {
+        width: "calc(100% - 20px)",
+        padding: "10px",
+        backgroundColor: "#202225",
+        border: "1px solid #202225",
+        borderRadius: "4px",
+        color: "#dcddde",
+        fontSize: "16px",
+        outline: "none",
+        transition: "border-color 0.2s ease-in-out",
+    },
+    button: {
+        width: "100%",
+        padding: "12px",
+        backgroundColor: "#7289da",
+        color: "#fff",
+        border: "none",
+        borderRadius: "4px",
+        fontSize: "16px",
+        fontWeight: 500,
+        cursor: "pointer",
+        marginTop: "20px",
+        transition: "background-color 0.2s ease-in-out",
+    },
+    signupText: {
+        color: "#b9bbbe",
+        fontSize: "14px",
+        marginTop: "20px",
+    },
+    signupLink: {
+        color: "#00aff4",
+        cursor: "pointer",
+        fontWeight: 500,
+    },
 };
 
 export default SignUpPage;
