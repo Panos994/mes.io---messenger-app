@@ -3,283 +3,271 @@ import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode"; // <-- ΝΕΑ ΕΙΣΑΓΩΓΗ
+import { jwtDecode } from "jwt-decode";
 
-// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const API_BASE_URL = "http://localhost:8080";
 
 const ChatComponent = () => {
-  const [sender, setSender] = useState(""); // Το username του συνδεδεμένου χρήστη
-  const [receiver, setReceiver] = useState(""); // Το username του παραλήπτη (που επιλέγεται)
+  const [sender, setSender] = useState("");
+  const [receiver, setReceiver] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [users, setUsers] = useState([]); // <-- ΝΕΟ STATE: Λίστα χρηστών
+  const [users, setUsers] = useState([]);
+
   const stompClientRef = useRef(null);
   const chatEndRef = useRef(null);
-  const navigate = useNavigate(); // <-- ΝΕΟ HOOK
+  const navigate = useNavigate();
 
-  // 1. useEffect για αρχικοποίηση κατά τη φόρτωση
+  // --------------------------
+  // 1) LOAD LOGGED USER + USERS
+  // --------------------------
+
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    // Αν δεν υπάρχει token, στείλε τον χρήστη στο login
     if (!token) {
       navigate("/");
       return;
     }
 
     try {
-      // 2. Αποκωδικοποίησε το token για να πάρεις το username (subject)
-      const decodedToken = jwtDecode(token);
-      const currentUsername = decodedToken.sub;
-      setSender(currentUsername);
+      const decoded = jwtDecode(token);
+      const username = decoded.sub; // subject
+      setSender(username);
 
-      // 3. Φέρε τη λίστα των άλλων χρηστών
       const fetchUsers = async () => {
         try {
-          const response = await axios.get(`${API_BASE_URL}/api/users/all`, {
-            headers: {
-              Authorization: `Bearer ${token}`, // Στείλε το token για έλεγχο
-            },
+          const res = await axios.get(`${API_BASE_URL}/api/users/all`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
-          setUsers(response.data);
-        } catch (error) {
-          console.error("Error fetching users:", error);
-          if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-             navigate("/"); // Token έληξε ή είναι άκυρο
-          }
+          setUsers(res.data);
+        } catch (err) {
+          console.error("Error fetching users:", err);
+          navigate("/");
         }
       };
 
       fetchUsers();
-    } catch (error) {
-      console.error("Invalid token:", error);
-      localStorage.removeItem("token");
+    } catch (e) {
+      console.error("TOKEN ERROR:", e);
       navigate("/");
     }
   }, [navigate]);
 
-  // 4. useEffect που συνδέεται στο WebSocket ΜΟΝΟ όταν έχουμε το username (sender)
+  // --------------------------
+  // 2) CONNECT TO WEBSOCKET
+  // --------------------------
+
   useEffect(() => {
-    if (sender) {
-      connect();
-    }
-    // eslint-disable-next-line
+    if (!sender) return;
+
+    const socket = new SockJS(`${API_BASE_URL}/ws`);
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000,
+      debug: () => {},
+      onConnect: () => {
+        console.log("Connected to WS");
+
+        stompClient.subscribe(`/user/${sender}/queue/messages`, (msg) => {
+          const body = JSON.parse(msg.body);
+
+          setMessages((prev) => [...prev, body]);
+        });
+      },
+    });
+
+    stompClient.activate();
+    stompClientRef.current = stompClient;
+
+    return () => stompClient.deactivate();
   }, [sender]);
 
-  // 5. useEffect για φόρτωση ιστορικού συνομιλίας όταν αλλάζει ο παραλήπτης
-  useEffect(() => {
-    const fetchConversation = async (receiverUsername) => {
-      const token = localStorage.getItem("token");
-      if (!sender || !receiverUsername || !token) return;
+  // --------------------------------------------
+  // 3) LOAD MESSAGE HISTORY WHEN USER IS SELECTED
+  // --------------------------------------------
 
+  useEffect(() => {
+    if (!receiver || !sender) {
+      setMessages([]);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const loadHistory = async () => {
       try {
-        const response = await axios.get(
+        const resp = await axios.get(
           `${API_BASE_URL}/api/messages/conversation`,
           {
             headers: { Authorization: `Bearer ${token}` },
             params: {
               username1: sender,
-              username2: receiverUsername,
+              username2: receiver,
             },
           }
         );
-        // ΣΗΜΕΙΩΣΗ: Αυτό προϋποθέτει ότι το backend επιστρέφει DTOs
-        // με τη μορφή { sender: "...", receiver: "...", content: "..." }
-        setMessages(response.data);
-      } catch (error) {
-        console.error("Error fetching conversation:", error);
-        setMessages([]); // Άδειασε σε περίπτωση σφάλματος
+
+        setMessages(resp.data);
+      } catch (err) {
+        console.error("Conversation fetch error:", err);
       }
     };
 
-    if (receiver) {
-      fetchConversation(receiver);
-    } else {
-      setMessages([]); // Αν δεν έχει επιλεγεί παραλήπτης, άδειασε τα μηνύματα
-    }
-  }, [receiver, sender]); // Τρέξε ξανά αν αλλάξει ο sender ή ο receiver
+    loadHistory();
+  }, [receiver, sender]);
 
-
-  // 6. useEffect για auto-scroll (παρέμεινε ίδιο)
+  // AUTO SCROLL
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // connect() - Παρέμεινε σχεδόν ίδιο
-  const connect = () => {
-    const socket = new SockJS(`${API_BASE_URL}/ws`);
-    const stompClient = new Client({
-      webSocketFactory: () => socket,
-      onConnect: () => {
-        console.log("Connected");
-        stompClient.subscribe(`/user/${sender}/queue/messages`, (msg) => {
-          const msgBody = JSON.parse(msg.body);
+  // --------------------------
+  // 4) SEND MESSAGE
+  // --------------------------
 
-          // Εμφάνισε το μήνυμα μόνο αν είναι από/προς τον επιλεγμένο χρήστη
-          setMessages((prev) => [...prev, msgBody]);
-          // *Προχωρημένη σκέψη:* Ίσως θες να το δείχνεις
-          // μόνο αν `msgBody.sender === receiver`
-        });
-      },
-    });
-    stompClient.activate();
-    stompClientRef.current = stompClient;
-  };
-
-  // sendMessage() - Παρέμεινε σχεδόν ίδιο
   const sendMessage = () => {
-    if (!stompClientRef.current || !stompClientRef.current.connected) return;
-    if (!message.trim() || !receiver.trim()) return; // `receiver` έρχεται πλέον από το state
+    if (!message.trim() || !receiver.trim()) return;
 
-    const chatMessage = { sender, receiver, content: message };
+    const msgObj = {
+      sender,
+      receiver,
+      content: message,
+    };
 
     stompClientRef.current.publish({
       destination: "/app/chat.send",
-      body: JSON.stringify(chatMessage),
+      body: JSON.stringify(msgObj),
     });
 
-    setMessages((prev) => [...prev, chatMessage]);
+    setMessages((prev) => [...prev, msgObj]);
     setMessage("");
   };
 
-  // --- ΝΕΟ UI ---
+  // --------------------------
+  // UI
+  // --------------------------
+
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        maxWidth: "900px", // Αυξήθηκε το πλάτος
+        maxWidth: "900px",
         margin: "auto",
         border: "1px solid #ccc",
         borderRadius: "8px",
-        overflow: "hidden",
       }}
     >
-      {/* Header - Τροποποιημένο */}
       <div
         style={{
+          background: "#0078ff",
+          padding: "10px 20px",
+          color: "white",
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          background: "#0078ff",
-          color: "white",
-          padding: "10px 20px",
         }}
       >
-        <h3 style={{ margin: 0 }}>Chat App</h3>
-        {sender && (
-          <span style={{ fontSize: "0.9em" }}>
-            Welcome, <strong>{sender}</strong>
-          </span>
-        )}
+        <h2>Chat App</h2>
+        <span>Logged in as: <b>{sender}</b></span>
       </div>
 
-      {/* Κύριο Περιεχόμενο (Λίστα Χρηστών + Chat) */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Πλαϊνή μπάρα χρηστών */}
+      <div style={{ display: "flex", flex: 1 }}>
+        {/* USERS LIST */}
         <div
           style={{
-            width: "200px",
+            width: "220px",
             borderRight: "1px solid #ddd",
+            background: "#f0f0f0",
             overflowY: "auto",
-            background: "#f7f7f7",
           }}
         >
-          <h4
-            style={{
-              padding: "10px",
-              margin: 0,
-              borderBottom: "1px solid #ddd",
-              background: "#eee",
-            }}
-          >
+          <h4 style={{ padding: "10px", margin: 0, background: "#ddd" }}>
             Users
           </h4>
-          {users.map((user) => (
+
+          {users.map((u) => (
             <div
-              key={user.id}
-              onClick={() => setReceiver(user.username)}
+              key={u.id}
+              onClick={() => setReceiver(u.username)}
               style={{
-                padding: "12px 15px",
+                padding: "12px",
                 cursor: "pointer",
                 background:
-                  receiver === user.username ? "#d0e7ff" : "transparent",
-                fontWeight: receiver === user.username ? "bold" : "normal",
-                borderBottom: "1px solid #eee",
+                  receiver === u.username ? "#b7d7ff" : "transparent",
+                borderBottom: "1px solid #ccc",
               }}
             >
-              {user.username}
+              {u.username}
             </div>
           ))}
         </div>
 
-        {/* Κύριο παράθυρο Chat */}
-        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-          {/* Μηνύματα */}
+        {/* CHAT WINDOW */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* MESSAGES */}
           <div
             style={{
               flex: 1,
               padding: "10px",
               overflowY: "auto",
-              background: "#f9f9f9",
+              background: "#fafafa",
             }}
           >
-            {/* Έλεγχος αν έχει επιλεγεί παραλήπτης */}
             {!receiver ? (
-               <div style={{textAlign: 'center', color: '#888', marginTop: '50px'}}>
-                 Select a user to start chatting.
-               </div>
+              <div style={{ textAlign: "center", marginTop: "50px" }}>
+                Select a user to chat.
+              </div>
             ) : (
               messages.map((msg, idx) => {
-                const isMine = msg.sender === sender;
+                const mine = msg.sender === sender;
+
                 return (
                   <div
                     key={idx}
                     style={{
                       display: "flex",
-                      justifyContent: isMine ? "flex-end" : "flex-start",
-                      marginBottom: "10px",
+                      justifyContent: mine ? "flex-end" : "flex-start",
                     }}
                   >
                     <div
                       style={{
-                        maxWidth: "70%",
                         padding: "8px 12px",
-                        borderRadius: "15px",
-                        background: isMine ? "#0078ff" : "#e5e5ea",
-                        color: isMine ? "white" : "black",
+                        background: mine ? "#0078ff" : "#e1e1e1",
+                        color: mine ? "white" : "black",
+                        borderRadius: "12px",
+                        marginBottom: "10px",
                       }}
                     >
-                      {/* Δεν χρειάζεται να δείχνουμε το όνομα σε κάθε μήνυμα
-                          αφού ξέρουμε με ποιον μιλάμε, αλλά το αφήνω
-                          αν το ιστορικό φέρνει και τα 2 ονόματα */}
-                      <strong style={{ fontSize: "0.8em", display: 'block', opacity: 0.7 }}>
-                        {msg.sender}
-                      </strong>
-                      <div>{msg.content}</div>
+                      {!mine && (
+                        <div
+                          style={{
+                            fontSize: "0.7em",
+                            opacity: 0.7,
+                            marginBottom: "3px",
+                          }}
+                        >
+                          {msg.sender}
+                        </div>
+                      )}
+                      {msg.content}
                     </div>
                   </div>
                 );
               })
             )}
-            <div ref={chatEndRef} />
+
+            <div ref={chatEndRef}></div>
           </div>
 
-          {/* Input Box - Εμφανίζεται μόνο αν έχει επιλεγεί receiver */}
+          {/* INPUT */}
           {receiver && (
-            <div
-              style={{
-                display: "flex",
-                borderTop: "1px solid #ddd",
-                padding: "10px",
-              }}
-            >
+            <div style={{ display: "flex", padding: "10px" }}>
               <input
                 style={{ flex: 1, padding: "8px" }}
-                placeholder={`Message ${receiver}...`}
                 value={message}
+                placeholder={`Message ${receiver}...`}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               />
@@ -287,12 +275,11 @@ const ChatComponent = () => {
                 onClick={sendMessage}
                 style={{
                   marginLeft: "10px",
-                  padding: "8px 15px",
+                  padding: "10px 15px",
                   background: "#0078ff",
                   color: "white",
                   border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
+                  borderRadius: "6px",
                 }}
               >
                 Send

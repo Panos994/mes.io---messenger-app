@@ -47,7 +47,20 @@ public class FriendsService {
         return friendRequestsRepository.save(request);
     }
 
-    public List<Friends> listFriends(User user) {
-        return friendsRepository.findByUser1OrUser2(user, user);
+//    public List<Friends> listFriends(User user) {
+//        return friendsRepository.findByUser1OrUser2(user, user);
+//    }
+
+    public List<User> listFriendUsers(User user) {
+        List<Friends> relations = friendsRepository.findByUser1OrUser2(user, user);
+
+        return relations.stream()
+                .map(f -> f.getUser1().equals(user) ? f.getUser2() : f.getUser1())
+                .toList();
     }
+
+    public List<FriendRequests> getPendingRequests(User receiver) {
+        return friendRequestsRepository.findByReceiverAndStatus(receiver, FriendRequests.RequestStatus.PENDING);
+    }
+
 }
