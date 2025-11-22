@@ -1,35 +1,26 @@
-// import React from "react";
-// import ChatComponent from "./ChatComponent";
-//
-// function App() {
-//     return (
-//         <div>
-//             <h1>React Chat App</h1>
-//             <ChatComponent />
-//         </div>
-//     );
-// }
-//
-// export default App;
-
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LoginPage from "./LoginPage";
-import SignUpPage from "./SignUpPage";
-import ChatPage from "./ChatPage";
-import ChatComponent from "./ChatComponent";
 
-function App() {
-    return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<LoginPage />} />
-                <Route path="/signup" element={<SignUpPage />} />
-                <Route path="/chat" element={<ChatPage />} />
-                <Route path="/chatComponent" element={<ChatComponent />} />
-            </Routes>
-        </BrowserRouter>
-    );
+import Navbar from "./components/Navbar";
+import SearchUser from "./components/SearchUser";
+import FriendRequests from "./components/FriendRequests";
+import FriendsList from "./components/FriendsList";
+import ChatComponent from "./components/ChatComponent";
+import LoginPage from "./components/LoginPage";
+import SignUpPage from "./components/SignUpPage";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/chat" element={<ChatComponent />} />
+        <Route path="/search" element={<SearchUser />} />
+        <Route path="/requests" element={<FriendRequests />} />
+        <Route path="/friends" element={<FriendsList />} />
+        <Route path="/signup" element={<SignUpPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App;

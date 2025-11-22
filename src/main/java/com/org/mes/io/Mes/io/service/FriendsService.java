@@ -5,62 +5,71 @@ import com.org.mes.io.Mes.io.entity.Friends;
 import com.org.mes.io.Mes.io.entity.User;
 import com.org.mes.io.Mes.io.repository.FriendRequestsRepository;
 import com.org.mes.io.Mes.io.repository.FriendsRepository;
+import com.org.mes.io.Mes.io.repository.UserRepository;
+import com.org.mes.io.Mes.io.securityconfig.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class FriendsService {
 
-    private final FriendsRepository friendsRepository;
-    private final FriendRequestsRepository friendRequestsRepository;
-    public FriendsService(FriendsRepository friendsRepository, FriendRequestsRepository friendRequestsRepository) {
-        this.friendsRepository = friendsRepository;
-        this.friendRequestsRepository = friendRequestsRepository;
-    }
+    private final UserRepository userRepository;
+    private final FriendRequestsRepository friendRequestRepository;
+    private final JwtUtil jwtUtil;
 
-    public FriendRequests sendRequest(User sender, User receiver){
-        FriendRequests request = FriendRequests.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .status(FriendRequests.RequestStatus.PENDING)
-                .build();
-        return friendRequestsRepository.save(request);
+    public void sendFriendRequest(String token, String receiverEmail) {
+        String senderUsername = jwtUtil.extractUsername(token.replace("Bearer ", ""));
+        User sender = userRepository.findByUsername(senderUsername)
+                .orElseThrow(() -> new RuntimeException("Sender not found"));
 
-    }
+        User receiver = userRepository.findByEmail(receiverEmail)
+                .orElseThrow(() -> new RuntimeException("Receiver not found"));
 
-    public FriendRequests respondToRequest(Long requestId, boolean accept) {
-        FriendRequests request = friendRequestsRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
-
-        if (accept) {
-            request.setStatus(FriendRequests.RequestStatus.ACCEPTED);
-            Friends friendship = Friends.builder()
-                    .user1(request.getSender())
-                    .user2(request.getReceiver())
-                    .build();
-            friendsRepository.save(friendship);
-        } else {
-            request.setStatus(FriendRequests.RequestStatus.REJECTED);
+        if (friendRequestRepository.existsBySenderAndReceiver(sender, receiver)) {
+            throw new RuntimeException("Request already exists");
         }
 
-        return friendRequestsRepository.save(request);
+        FriendRequests fr = new FriendRequests();
+        fr.setSender(sender);
+        fr.setReceiver(receiver);
+        fr.setStatus(FriendRequests.RequestStatus.PENDING);
+
+        friendRequestRepository.save(fr);
     }
 
-//    public List<Friends> listFriends(User user) {
-//        return friendsRepository.findByUser1OrUser2(user, user);
-//    }
+    public List<FriendRequests> getPendingRequests(String token) {
+        String username = jwtUtil.extractUsername(token.replace("Bearer ", ""));
+        User receiver = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    public List<User> listFriendUsers(User user) {
-        List<Friends> relations = friendsRepository.findByUser1OrUser2(user, user);
-
-        return relations.stream()
-                .map(f -> f.getUser1().equals(user) ? f.getUser2() : f.getUser1())
-                .toList();
+        return friendRequestRepository.findByReceiverAndStatus(receiver, FriendRequests.RequestStatus.PENDING);
     }
 
-    public List<FriendRequests> getPendingRequests(User receiver) {
-        return friendRequestsRepository.findByReceiverAndStatus(receiver, FriendRequests.RequestStatus.PENDING);
+    public void acceptRequest(Long requestId) {
+        FriendRequests fr = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        fr.setStatus(FriendRequests.RequestStatus.ACCEPTED);
+        friendRequestRepository.save(fr);
+    }
+
+    public void rejectRequest(Long requestId) {
+        FriendRequests fr = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        fr.setStatus(FriendRequests.RequestStatus.REJECTED);
+        friendRequestRepository.save(fr);
+    }
+    public List<User> getAcceptedFriends(String token) {
+        String username = jwtUtil.extractUsername(token.replace("Bearer ", ""));
+        User me = userRepository.findByUsername(username).orElseThrow();
+
+        List<FriendRequests> accepted = friendRequestRepository
+                .findByReceiverAndStatus(me, FriendRequests.RequestStatus.ACCEPTED);
+
+        return accepted.stream().map(FriendRequests::getSender).toList();
     }
 
 }

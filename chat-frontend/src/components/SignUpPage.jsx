@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:8080/api/auth/register";
+const API_URL = "http://localhost:9090/api/auth/register";
 
 const SignUpPage = () => {
     const [username, setUsername] = useState("");

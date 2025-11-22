@@ -40,7 +40,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // **ΚΡΙΣΙΜΟ:** το Origin του Frontend
-        configuration.setAllowedOrigins(List.of(FRONTEND_ORIGIN, "http://localhost:8080","http://localhost:3000")); // Προσθέστε το localhost για τοπική ανάπτυξη
+        configuration.setAllowedOrigins(List.of(FRONTEND_ORIGIN, "http://localhost:9090","http://localhost:3000")); // Προσθέστε το localhost για τοπική ανάπτυξη
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:8080/api/auth/login";
+const API_URL = "http://localhost:9090/api/auth/login";
 
 const LoginPage = () => {
     const [email, setEmail] = useState("");
@@ -17,7 +17,7 @@ const LoginPage = () => {
             const res = await axios.post(API_URL, { email, password });
             console.log("Response:", res.data);
             localStorage.setItem("token", res.data.token);
-            navigate("/chatComponent");
+            navigate("/chat"); ///chatComponent
         } catch (err) {
             console.error("Login error:", err);
             alert("Invalid credentials");

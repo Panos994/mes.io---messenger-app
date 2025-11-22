@@ -4,14 +4,18 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private final String SECRET_KEY = "abc4%67*s";
+
+    private static final String SECRET_KEY = "XyZ12345ABCD6789EFGH9876LMNOPQRSxYz09876QRST1234UVWXzy9876abcdef";
+
     private final long EXPIRATION_TIME = 86400000;
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
@@ -20,6 +24,7 @@ public class JwtUtil {
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
+
     public String extractUsername(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -28,9 +33,13 @@ public class JwtUtil {
                 .getBody()
                 .getSubject();
     }
+
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;

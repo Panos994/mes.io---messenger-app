@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = "http://localhost:9090";
 
 const ChatComponent = () => {
   const [sender, setSender] = useState("");
