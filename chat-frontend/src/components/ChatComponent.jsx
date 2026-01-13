@@ -35,24 +35,44 @@ const ChatComponent = () => {
       const username = decoded.sub; // subject
       setSender(username);
 
-      const fetchUsers = async () => {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/api/users/all`, {
+//       const fetchUsers = async () => {
+//         try {
+//           const res = await axios.get(`${API_BASE_URL}/api/users/all`, {
+//             headers: { Authorization: `Bearer ${token}` },
+//           });
+//           setUsers(res.data);
+//         } catch (err) {
+//           console.error("Error fetching users:", err);
+//           navigate("/");
+//         }
+//       };
+//
+//       fetchUsers();
+//     } catch (e) {
+//       console.error("TOKEN ERROR:", e);
+//       navigate("/");
+//     }
+//   }, [navigate]);
+const fetchFriends = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/api/friends/accepted`,
+          {
             headers: { Authorization: `Bearer ${token}` },
-          });
-          setUsers(res.data);
-        } catch (err) {
-          console.error("Error fetching users:", err);
-          navigate("/");
-        }
-      };
+          }
+        );
+        setUsers(res.data);
+      } catch (err) {
+        console.error("Error fetching friends", err);
+      }
+    };
 
-      fetchUsers();
-    } catch (e) {
-      console.error("TOKEN ERROR:", e);
-      navigate("/");
-    }
-  }, [navigate]);
+    fetchFriends();
+  } catch (e) {
+    console.error("TOKEN ERROR:", e);
+    navigate("/");
+  }
+}, [navigate]);
 
   // --------------------------
   // 2) CONNECT TO WEBSOCKET

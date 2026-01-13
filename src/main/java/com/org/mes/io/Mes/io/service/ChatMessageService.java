@@ -48,7 +48,12 @@ public class ChatMessageService {
         allMessages.addAll(messagesFrom2To1);
 
         // Ταξινόμησε την τελική λίστα (αφού συνδυάστηκαν οι 2 λίστες)
-        allMessages.sort(Comparator.comparing(ChatMessage::getTimestamp));
+        allMessages.sort(
+                Comparator.comparing(
+                        ChatMessage::getTimestamp,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                )
+        );
 
         // Μετατροπή σε DTOs
         return allMessages.stream()
